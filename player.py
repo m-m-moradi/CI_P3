@@ -1,20 +1,19 @@
 import pygame
 import numpy as np
-
 from nn import NeuralNetwork
 from config import CONFIG
 
 
-class Player():
+class Player:
 
     def __init__(self, mode, control=False):
 
         self.control = control  # if True, playing mode is activated. else, AI mode.
-        self.pos = [100, 275]   # position of the agent
-        self.direction = -1     # if 1, goes upwards. else, goes downwards.
-        self.v = 0              # vertical velocity
-        self.g = 9.8            # gravity constant
-        self.mode = mode        # game mode
+        self.pos = [100, 275]  # position of the agent
+        self.direction = -1  # if 1, goes upwards. else, goes downwards.
+        self.v = 0  # vertical velocity
+        self.g = 9.8  # gravity constant
+        self.mode = mode  # game mode
 
         # neural network architecture (AI mode)
         layer_sizes = self.init_network(mode)
@@ -22,7 +21,7 @@ class Player():
         self.nn = NeuralNetwork(layer_sizes)
         self.fitness = 0  # fitness of agent
 
-    def move(self, box_lists, camera, events=None):
+    def move(self, box_lists, camera, events=None, normalizer=None):
 
         if len(box_lists) != 0:
             if box_lists[0].x - camera + 60 < self.pos[0]:
@@ -37,7 +36,7 @@ class Player():
         # AI control
         else:
             agent_position = [camera + self.pos[0], self.pos[1]]
-            self.direction = self.think(mode, box_lists, agent_position, self.v)
+            self.direction = self.think(mode, box_lists, agent_position, self.v, normalizer)
 
         # game physics
         if mode == 'gravity' or mode == 'helicopter':
@@ -90,15 +89,14 @@ class Player():
 
         layer_sizes = None
         if mode == 'gravity':
-            layer_sizes = [6, 20, 1]
+            layer_sizes = [9, 1]
         elif mode == 'helicopter':
-            layer_sizes = [6, 20, 1]
+            layer_sizes = [9, 1]
         elif mode == 'thrust':
-            layer_sizes = [6, 20, 1]
+            layer_sizes = [9, 1]
         return layer_sizes
 
-    
-    def think(self, mode, box_lists, agent_position, velocity):
+    def think(self, mode, box_lists, agent_position, velocity, normalizer):
 
         # TODO
         # mode example: 'helicopter'
@@ -106,8 +104,24 @@ class Player():
         # agent_position example: [600, 250]
         # velocity example: 7
 
-        direction = -1
-        return direction
+        input_vector = [
+            [normalizer.norm_speed(velocity)],
+            [normalizer.norm_agent_x(agent_position[0])],
+            [normalizer.norm_agent_y(agent_position[1])],
+            [normalizer.norm_box_list_x(box_lists[0].x) if len(box_lists) > 0 else 1],
+            [normalizer.norm_box_list_y(box_lists[0].gap_mid + 120) if len(box_lists) > 0 else 1],
+            [normalizer.norm_box_list_y(box_lists[0].gap_mid - 120) if len(box_lists) > 0 else 1],
+            [normalizer.norm_box_list_x(box_lists[1].x) if len(box_lists) > 1 else 1],
+            [normalizer.norm_box_list_y(box_lists[1].gap_mid + 120) if len(box_lists) > 1 else 1],
+            [normalizer.norm_box_list_y(box_lists[1].gap_mid - 120) if len(box_lists) > 1 else 1],
+        ]
+
+        raw_direction = self.nn.forward(input_vector)
+
+        if raw_direction[0][0] <= 0.5:
+            return -1
+        else:
+            return 1
 
     def collision_detection(self, mode, box_lists, camera):
         if mode == 'helicopter':

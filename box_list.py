@@ -1,9 +1,10 @@
 from config import CONFIG
 
+
 class BoxList():
 
     def __init__(self, gap_num, gap_offset, box_vector, camera):
-        
+
         self.gap_num = gap_num
         self.gap_offset = gap_offset
         self.boxes = []

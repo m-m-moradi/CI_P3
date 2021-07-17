@@ -7,7 +7,8 @@ from player import Player
 from box_list import BoxList
 from evolution import Evolution
 from config import CONFIG
-from util import save_generation, load_generation
+from util import save_generation, load_generation, Normalizer, clear, backup
+
 
 # argument parser
 parser = argparse.ArgumentParser(
@@ -38,7 +39,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-class Game():
+class Game:
 
     def __init__(self):  # class initializer
 
@@ -49,12 +50,12 @@ class Game():
         self.camera = 0
 
     def run(self, mode, checkpoint_path):  # a function to run the game in evolutionary mode
-
         clock = pygame.time.Clock()
         evolution = Evolution(mode)  # evolutionary algorithms are implemented in this class
 
         background, box_img, agent = self.load_images(mode)  # load images
         agent_counter = 0  # for helicopter mode only
+        normalizer = Normalizer(mode)
 
         # game starts from generation 0
         if checkpoint_path == '':
@@ -71,6 +72,8 @@ class Game():
             players = evolution.generate_new_population(CONFIG['num_players'], prev_players)  # players of the current generation
             gen_num = int(checkpoint_path[checkpoint_path.rfind('/') + 1:]) + 1
             high_score = max(p.fitness for p in prev_players)
+
+        clear(mode)
 
         delta_xs = [0 for _ in range(CONFIG['num_players'])]  # distance travelled by agent
         prev_delta_xs = [0 for _ in range(CONFIG['num_players'])]  # distance travelled by previous generation agents
@@ -95,6 +98,7 @@ class Game():
 
             keys = pygame.key.get_pressed()
             if keys[pygame.K_ESCAPE]:
+                backup(mode)
                 break
 
             for event in events:
@@ -123,7 +127,7 @@ class Game():
             # move and check collision (current generation agents)
             for i, p in enumerate(players):
                 if delta_xs[i] == 0:
-                    collided = p.move(box_lists[:4], self.camera)
+                    collided = p.move(box_lists[:4], self.camera, normalizer=normalizer)
                     if collided or self.camera > high_score + 10000:
                         delta_xs[i] = self.camera
                         num_alive -= 1
@@ -131,7 +135,7 @@ class Game():
             # move and check collision (previous generation agents)
             for i, p in enumerate(prev_players):
                 if prev_alive[i]:
-                    collided = p.move(box_lists[:4], self.camera)
+                    collided = p.move(box_lists[:4], self.camera, normalizer=normalizer)
                     if collided or self.camera > high_score + 10000:
                         prev_delta_xs[i] = self.camera
                         prev_alive[i] = False
@@ -248,6 +252,7 @@ class Game():
 
     def play(self, mode):  # a function to run the game in playing mode
 
+        backup_and_clear(mode)
         clock = pygame.time.Clock()
 
         background, box_img, agent = self.load_images(mode)  # load images
@@ -270,6 +275,7 @@ class Game():
             events = pygame.event.get()
             keys = pygame.key.get_pressed()
             if keys[pygame.K_ESCAPE]:
+                backup(mode)
                 break
 
             for event in events:
@@ -332,7 +338,6 @@ class Game():
             
             pygame.display.update()
 
-
     def load_images(self, mode):
         background = pygame.image.load(f'sprites/back_{mode}.jpg').convert()
         background = pygame.transform.scale(background, (1280, 720))
@@ -369,7 +374,7 @@ class Game():
 
 
 if __name__ == '__main__':
-    is_play = True if args.play == 'True' else False 
+    is_play = True if args.play == 'True' else False
     if is_play:
         Game().play(args.mode)
     else:
