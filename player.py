@@ -41,6 +41,7 @@ class Player:
         # game physics
         if mode == 'gravity' or mode == 'helicopter':
             self.v -= self.g * self.direction * (1 / 60)
+            assert self.direction == -1 or self.direction == 1, 'direction is not correct'
             self.pos[1] += self.v
 
         elif mode == 'thrust':
@@ -115,6 +116,9 @@ class Player:
             [normalizer.norm_box_list_y(box_lists[1].gap_mid + 120) if len(box_lists) > 1 else 1],
             [normalizer.norm_box_list_y(box_lists[1].gap_mid - 120) if len(box_lists) > 1 else 1],
         ]
+
+        for x in input_vector:
+            assert (0 <= x[0] <= 1), 'input vector is not normalized'
 
         raw_direction = self.nn.forward(input_vector)
 

@@ -5,7 +5,7 @@ import pprint
 import matplotlib.pyplot as plt
 import pathlib
 
-archive = './backups/Jul-18-2021-02-42-53_statistics.zip'
+archive = './backups/Jul-18-2021-02-59-14_statistics.zip'
 directory = os.path.splitext(os.path.basename(archive))[0]
 shutil.unpack_archive(archive, directory, format='zip')
 
@@ -14,9 +14,9 @@ for filename in os.listdir(directory):
     input_file = open(f'{directory}/{filename}')
     data = json.load(input_file)
     generations_list.append(data)
+    input_file.close()
 
 shutil.rmtree(directory, ignore_errors=True)
-
 generations_list.sort(key=lambda item: item['generation_number'])
 pprint.pprint(generations_list, depth=2)
 

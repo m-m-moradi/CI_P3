@@ -252,7 +252,6 @@ class Game:
 
     def play(self, mode):  # a function to run the game in playing mode
 
-        backup_and_clear(mode)
         clock = pygame.time.Clock()
 
         background, box_img, agent = self.load_images(mode)  # load images

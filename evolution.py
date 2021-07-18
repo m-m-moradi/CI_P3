@@ -21,7 +21,7 @@ class Evolution:
             p.fitness = delta_xs[i]
 
     def mutate(self, child):
-        mutation_distribution = [0.1, 0.9]  # from each 10 values 1 value will change
+        mutation_distribution = [0.2, 0.8]  # from each 10 values 1 value will change
         mutation_occurrence = [True, False]
 
         # mutating weights
@@ -113,7 +113,7 @@ class Evolution:
             mutation_distribution = [0.9, 0.1]
             mutation_occurrence = [True, False]
 
-            crossover_distribution = [0.3, 0.7]
+            crossover_distribution = [0.6, 0.4]
             crossover_occurrence = [True, False]
 
             fitness_list = np.array([player.fitness for player in prev_players])
@@ -156,34 +156,32 @@ class Evolution:
                 new_players.append(child1)
                 new_players.append(child2)
 
-            # TODO (additional): a selection method other than `fitness proportionate`
-            # TODO (additional): implementing crossover
-
             self.mutation_count = mutations_happens
             self.crossover_count = crossover_happens
-            print(f'mutations : {mutations_happens}, crossovers: {crossover_happens}')
+            # print(f'mutations : {mutations_happens}, crossovers: {crossover_happens}')
             return new_players
 
-    def next_population_selection(self, players, num_players):
-        # top-k
-        # players.sort(key=lambda x: x.fitness, reverse=True)
-
-        print(f'gen: {self.gen_num}, number of players: {len(players)}')
+    def next_population_selection(self, players, num_players, mode='QT'):
         # Q tournament
         selected_players = []
         selected_players_indices = []
-        tournament_size = 5
-        for _ in range(num_players):
-            tournament_candidates_indices = np.random.randint(0, high=len(players), size=tournament_size)
-            tournament_candidates = [(i, players[i]) for i in tournament_candidates_indices]
-            tournament_candidates.sort(key=lambda x: x[1].fitness, reverse=True)
-            selected_players.append(tournament_candidates[0][1])
-            selected_players_indices.append(tournament_candidates[0][0])
+        if mode == 'QT':
+            tournament_size = 3
+            for _ in range(num_players):
+                tournament_candidates_indices = np.random.randint(0, high=len(players), size=tournament_size)
+                tournament_candidates = [(i, players[i]) for i in tournament_candidates_indices]
+                tournament_candidates.sort(key=lambda x: x[1].fitness, reverse=True)
+                selected_players.append(copy.deepcopy(tournament_candidates[0][1]))
+                selected_players_indices.append(tournament_candidates[0][0])
 
-        # TODO (additional): a selection method other than `top-k`
-        # TODO (additional): plotting
+        # top-k
+        else:
+            candidates = [(i, players[i]) for i in range(len(players))]
+            candidates.sort(key=lambda x: x[1].fitness, reverse=True)
+            selected_players = [x[1] for x in candidates[:num_players]]
+            selected_players_indices = [x[0] for x in candidates[:num_players]]
 
         make_stat_files(self.mode, self.gen_num, self.mutation_count, self.crossover_count, players, selected_players_indices)
-
+        #
         self.gen_num += 1
         return selected_players
